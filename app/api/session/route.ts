@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { API_BASE_URL, SESSION_COOKIE, sessionCookieOptions } from "@/lib/session";
+import { API_BASE_URL, REFRESH_COOKIE, SESSION_COOKIE, clearSessionCookies, renewSession, setSessionCookies } from "@/lib/session";
 
 /**
  * Sign-in happens here rather than in the browser so the access token never
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
   });
 
   const payload = (await upstream.json().catch(() => null)) as
-    | { accessToken?: string; user?: { role?: string }; message?: string }
+    | { accessToken?: string; refreshToken?: string; user?: { role?: string }; message?: string }
     | null;
 
   if (!upstream.ok || !payload?.accessToken) {
@@ -43,24 +43,35 @@ export async function POST(request: NextRequest) {
   }
 
   const response = NextResponse.json({ user: payload.user });
-  response.cookies.set(SESSION_COOKIE, payload.accessToken, sessionCookieOptions());
+  setSessionCookies(response, { accessToken: payload.accessToken, refreshToken: payload.refreshToken });
   return response;
 }
 
 /** Reads the current session so the panel can restore it after a reload. */
 export async function GET(request: NextRequest) {
-  const token = request.cookies.get(SESSION_COOKIE)?.value;
-  if (!token) {
+  let token = request.cookies.get(SESSION_COOKIE)?.value;
+  const refreshToken = request.cookies.get(REFRESH_COOKIE)?.value;
+  if (!token && !refreshToken) {
     return NextResponse.json({ user: null }, { status: 401 });
   }
 
-  const upstream = await fetch(`${API_BASE_URL}/auth/me`, {
-    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }
-  });
+  const fetchMe = (accessToken: string | undefined) =>
+    fetch(`${API_BASE_URL}/auth/me`, {
+      headers: { ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}), Accept: "application/json" },
+      cache: "no-store"
+    });
+
+  let upstream = await fetchMe(token);
+  // Past the access token's hour: renew it before giving up on the session.
+  const renewed = upstream.status === 401 && refreshToken ? await renewSession(refreshToken) : null;
+  if (renewed) {
+    token = renewed.accessToken;
+    upstream = await fetchMe(token);
+  }
 
   if (!upstream.ok) {
     const response = NextResponse.json({ user: null }, { status: 401 });
-    response.cookies.set(SESSION_COOKIE, "", { ...sessionCookieOptions(), maxAge: 0 });
+    clearSessionCookies(response);
     return response;
   }
 
@@ -68,15 +79,26 @@ export async function GET(request: NextRequest) {
 
   if (payload.user?.role !== "ADMIN") {
     const response = NextResponse.json({ user: null }, { status: 403 });
-    response.cookies.set(SESSION_COOKIE, "", { ...sessionCookieOptions(), maxAge: 0 });
+    clearSessionCookies(response);
     return response;
   }
 
-  return NextResponse.json({ user: payload.user });
+  const response = NextResponse.json({ user: payload.user });
+  if (renewed) setSessionCookies(response, renewed);
+  return response;
 }
 
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
+  // Ends the sign-in on the backend too, so the refresh token can't be reused.
+  const refreshToken = request.cookies.get(REFRESH_COOKIE)?.value;
+  if (refreshToken) {
+    await fetch(`${API_BASE_URL}/auth/logout`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ refreshToken })
+    }).catch(() => undefined);
+  }
   const response = NextResponse.json({ ok: true });
-  response.cookies.set(SESSION_COOKIE, "", { ...sessionCookieOptions(), maxAge: 0 });
+  clearSessionCookies(response);
   return response;
 }

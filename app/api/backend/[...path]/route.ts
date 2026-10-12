@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { API_BASE_URL, SESSION_COOKIE, sessionCookieOptions } from "@/lib/session";
+import { API_BASE_URL, REFRESH_COOKIE, SESSION_COOKIE, SessionTokens, renewSession, setSessionCookies } from "@/lib/session";
 
 /**
  * Forwards panel requests to the Tengria API, attaching the access token from
@@ -28,19 +28,29 @@ async function proxy(request: NextRequest, path: string[]) {
     }
   }
 
-  const upstream = await fetch(target, { method: request.method, headers, body, cache: "no-store" });
-  const text = await upstream.text();
+  let upstream = await fetch(target, { method: request.method, headers, body, cache: "no-store" });
 
+  // The access token is short-lived: renew it once and replay the request.
+  let renewed: SessionTokens | null = null;
+  const refreshToken = request.cookies.get(REFRESH_COOKIE)?.value;
+  if (upstream.status === 401 && refreshToken) {
+    renewed = await renewSession(refreshToken);
+    if (renewed) {
+      headers.Authorization = `Bearer ${renewed.accessToken}`;
+      upstream = await fetch(target, { method: request.method, headers, body, cache: "no-store" });
+    }
+  }
+
+  const text = await upstream.text();
   const response = new NextResponse(text, {
     status: upstream.status,
     headers: { "Content-Type": upstream.headers.get("Content-Type") ?? "application/json" }
   });
+  if (renewed) setSessionCookies(response, renewed);
 
-  // An expired or revoked token should not linger in the browser.
-  if (upstream.status === 401) {
-    response.cookies.set(SESSION_COOKIE, "", { ...sessionCookieOptions(), maxAge: 0 });
-  }
-
+  // A refused renewal does not clear the cookies here: with several requests
+  // in flight, a sibling may have just renewed and set fresh ones. The panel
+  // retries a 401 once, and /api/session clears a session that is truly over.
   return response;
 }
 

@@ -25,12 +25,18 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   const headers: Record<string, string> = { Accept: "application/json" };
   if (options.body !== undefined) headers["Content-Type"] = "application/json";
 
-  const response = await fetch(`${PROXY_PREFIX}${path.startsWith("/") ? path : `/${path}`}`, {
-    method: options.method ?? "GET",
-    headers,
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
-    credentials: "same-origin"
-  });
+  const send = () =>
+    fetch(`${PROXY_PREFIX}${path.startsWith("/") ? path : `/${path}`}`, {
+      method: options.method ?? "GET",
+      headers,
+      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      credentials: "same-origin"
+    });
+
+  let response = await send();
+  // Several requests can hit an expired access token together; one renews it
+  // and the others may lose that race. By now the browser has the new cookie.
+  if (response.status === 401) response = await send();
 
   const text = await response.text();
   const payload = text ? safeParse(text) : null;

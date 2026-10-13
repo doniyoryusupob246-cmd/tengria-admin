@@ -5,6 +5,16 @@
  */
 const PROXY_PREFIX = "/api/backend";
 
+/**
+ * Photos are served by the API itself (GET /uploads/... is public), not
+ * through the proxy, which only relays JSON. A full URL (a CDN) is kept as is.
+ */
+export function mediaUrl(path: string) {
+  if (/^https?:\/\//.test(path)) return path;
+  const base = (process.env.NEXT_PUBLIC_API_URL ?? "https://tengria-backend.vercel.app").replace(/\/$/, "");
+  return `${base}${path}`;
+}
+
 export class ApiError extends Error {
   constructor(
     message: string,

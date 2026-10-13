@@ -9,8 +9,13 @@ const NAV_ITEMS = [
   { href: "/categories", label: "Kategoriler", icon: "🗂️" },
   { href: "/instructors", label: "Eğitmenler", icon: "🧑‍🏫" },
   { href: "/users", label: "Kullanıcılar", icon: "👥" },
+  { href: "/moderation", label: "Moderasyon", icon: "🛡️" },
   { href: "/media", label: "Medya", icon: "🎬" },
-  { href: "/articles", label: "Makaleler", icon: "📰" }
+  { href: "/articles", label: "Makaleler", icon: "📰" },
+  { href: "/learn", label: "Dil Yolu", icon: "🧭" },
+  { href: "/certificates", label: "Sertifikalar", icon: "📜" },
+  { href: "/stories", label: "Hikâyeler", icon: "✨" },
+  { href: "/push", label: "Bildirimler", icon: "📣" }
 ];
 
 export function Sidebar() {

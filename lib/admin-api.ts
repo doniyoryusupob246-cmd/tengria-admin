@@ -9,7 +9,22 @@ import {
   CourseModule,
   Instructor,
   Lesson,
+  BroadcastAudience,
+  BroadcastResult,
+  CertificatesPage,
+  ExerciseType,
+  LearnLanguage,
+  LearnLanguageTree,
+  LearnLesson,
+  LearnUnit,
+  LessonExercises,
   MediaItem,
+  ModerationComment,
+  PushLanguage,
+  ReportConversation,
+  ModerationPostsPage,
+  ReportsPage,
+  Story,
   UserListResponse
 } from "./types";
 
@@ -228,5 +243,166 @@ export const articlesApi = {
   },
   remove(id: string) {
     return apiRequest<{ success: boolean }>(`/admin/articles/${id}`, { method: "DELETE" });
+  }
+};
+
+export type StoryPayload = {
+  language: Story["language"];
+  title: string;
+  body: string | null;
+  ctaLabel: string | null;
+  ctaUrl: string | null;
+  isPublished: boolean;
+  startsAt: string;
+  endsAt: string | null;
+  /** Only when a new photo was picked. */
+  imageBase64?: string;
+  mimeType?: string;
+};
+
+export const storiesApi = {
+  list() {
+    return apiRequest<Story[]>("/admin/stories");
+  },
+  create(data: StoryPayload) {
+    return apiRequest<Story>("/admin/stories", { method: "POST", body: data });
+  },
+  update(id: string, data: Partial<StoryPayload>) {
+    return apiRequest<Story>(`/admin/stories/${id}`, { method: "PATCH", body: data });
+  },
+  remove(id: string) {
+    return apiRequest<{ deleted: boolean }>(`/admin/stories/${id}`, { method: "DELETE" });
+  }
+};
+
+export const moderationApi = {
+  reports(params: { status: "open" | "resolved" | "all"; page?: number; pageSize?: number }) {
+    const query = new URLSearchParams({ status: params.status });
+    if (params.page) query.set("page", String(params.page));
+    if (params.pageSize) query.set("pageSize", String(params.pageSize));
+    return apiRequest<ReportsPage>(`/admin/reports?${query}`);
+  },
+  /** `allForTarget` closes every open report about the same person too. */
+  resolveReport(id: string, data: { resolved: boolean; allForTarget?: boolean }) {
+    return apiRequest<{ updated: number }>(`/admin/reports/${id}`, { method: "PATCH", body: data });
+  },
+  posts(params: { search?: string; userId?: string; page?: number; pageSize?: number } = {}) {
+    const query = new URLSearchParams();
+    if (params.search) query.set("search", params.search);
+    if (params.userId) query.set("userId", params.userId);
+    if (params.page) query.set("page", String(params.page));
+    if (params.pageSize) query.set("pageSize", String(params.pageSize));
+    const qs = query.toString();
+    return apiRequest<ModerationPostsPage>(`/admin/posts${qs ? `?${qs}` : ""}`);
+  },
+  removePost(id: string) {
+    return apiRequest<{ deleted: boolean }>(`/admin/posts/${id}`, { method: "DELETE" });
+  },
+  comments(postId: string) {
+    return apiRequest<{ items: ModerationComment[] }>(`/admin/posts/${postId}/comments`);
+  },
+  removeComment(id: string) {
+    return apiRequest<{ deleted: boolean; removed: number }>(`/admin/comments/${id}`, { method: "DELETE" });
+  },
+  /** Only the reporter's own conversation with the person they reported. */
+  conversation(reportId: string) {
+    return apiRequest<ReportConversation>(`/admin/reports/${reportId}/conversation`);
+  },
+  removeMessage(id: string) {
+    return apiRequest<{ deleted: boolean }>(`/admin/messages/${id}`, { method: "DELETE" });
+  }
+};
+
+export type LearnLanguagePayload = { code: string; name: string; nativeName: string; description?: string; sortOrder?: number; isPublished?: boolean };
+export type LearnUnitPayload = { slug?: string; title: string; description?: string; sortOrder?: number; isPremium?: boolean; isPublished?: boolean };
+export type LearnLessonPayload = { slug?: string; title: string; sortOrder?: number; isPublished?: boolean };
+export type ExercisePayload = {
+  type: ExerciseType;
+  prompt: string;
+  word: string;
+  correctAnswer: string;
+  options: string[];
+  hint?: string;
+  xpReward?: number;
+  sortOrder?: number;
+};
+
+export const learnApi = {
+  languages() {
+    return apiRequest<LearnLanguage[]>("/admin/learn/languages");
+  },
+  language(id: string) {
+    return apiRequest<LearnLanguageTree>(`/admin/learn/languages/${id}`);
+  },
+  createLanguage(data: LearnLanguagePayload) {
+    return apiRequest<LearnLanguage>("/admin/learn/languages", { method: "POST", body: data });
+  },
+  updateLanguage(id: string, data: Partial<LearnLanguagePayload>) {
+    return apiRequest<LearnLanguage>(`/admin/learn/languages/${id}`, { method: "PATCH", body: data });
+  },
+  removeLanguage(id: string) {
+    return apiRequest<{ deleted: boolean }>(`/admin/learn/languages/${id}`, { method: "DELETE" });
+  },
+  createUnit(languageId: string, data: LearnUnitPayload) {
+    return apiRequest<LearnUnit>(`/admin/learn/languages/${languageId}/units`, { method: "POST", body: data });
+  },
+  updateUnit(id: string, data: Partial<LearnUnitPayload>) {
+    return apiRequest<LearnUnit>(`/admin/learn/units/${id}`, { method: "PATCH", body: data });
+  },
+  removeUnit(id: string) {
+    return apiRequest<{ deleted: boolean }>(`/admin/learn/units/${id}`, { method: "DELETE" });
+  },
+  createLesson(unitId: string, data: LearnLessonPayload) {
+    return apiRequest<LearnLesson>(`/admin/learn/units/${unitId}/lessons`, { method: "POST", body: data });
+  },
+  updateLesson(id: string, data: Partial<LearnLessonPayload>) {
+    return apiRequest<LearnLesson>(`/admin/learn/lessons/${id}`, { method: "PATCH", body: data });
+  },
+  removeLesson(id: string) {
+    return apiRequest<{ deleted: boolean }>(`/admin/learn/lessons/${id}`, { method: "DELETE" });
+  },
+  exercises(lessonId: string) {
+    return apiRequest<LessonExercises>(`/admin/learn/lessons/${lessonId}/exercises`);
+  },
+  createExercise(lessonId: string, data: ExercisePayload) {
+    return apiRequest(`/admin/learn/lessons/${lessonId}/exercises`, { method: "POST", body: data });
+  },
+  updateExercise(id: string, data: Partial<ExercisePayload>) {
+    return apiRequest(`/admin/learn/exercises/${id}`, { method: "PATCH", body: data });
+  },
+  removeExercise(id: string) {
+    return apiRequest<{ deleted: boolean }>(`/admin/learn/exercises/${id}`, { method: "DELETE" });
+  }
+};
+
+export const certificatesApi = {
+  list(params: { search?: string; page?: number; pageSize?: number } = {}) {
+    const query = new URLSearchParams();
+    if (params.search) query.set("search", params.search);
+    if (params.page) query.set("page", String(params.page));
+    if (params.pageSize) query.set("pageSize", String(params.pageSize));
+    const qs = query.toString();
+    return apiRequest<CertificatesPage>(`/admin/certificates${qs ? `?${qs}` : ""}`);
+  },
+  revoke(id: string) {
+    return apiRequest<{ revoked: boolean }>(`/admin/certificates/${id}`, { method: "DELETE" });
+  }
+};
+
+export type BroadcastPayload = {
+  title: Partial<Record<PushLanguage, string>>;
+  body: Partial<Record<PushLanguage, string>>;
+  url?: string;
+  audience: BroadcastAudience;
+  /** Only to the signed-in admin's own phones. */
+  test?: boolean;
+};
+
+export const pushApi = {
+  audience(audience: BroadcastAudience) {
+    return apiRequest<{ recipients: number; devices: number }>(`/admin/push/audience?audience=${audience}`);
+  },
+  broadcast(data: BroadcastPayload) {
+    return apiRequest<BroadcastResult>("/admin/push/broadcast", { method: "POST", body: data });
   }
 };

@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { instructorsApi } from "@/lib/admin-api";
+import { ApiError } from "@/lib/api";
 import { Instructor } from "@/lib/types";
 import { Button, Card, EmptyState, ErrorBanner, Field, Input, LoadingBlock, PageHeader, Textarea } from "@/components/ui";
 import { Modal } from "@/components/Modal";
@@ -79,8 +80,12 @@ export default function InstructorsPage() {
 
   const handleDelete = async (instructor: Instructor) => {
     if (!confirm(`"${instructor.name}" eğitmenini silmek istiyor musun?`)) return;
-    await instructorsApi.remove(instructor.id);
-    fetchItems();
+    try {
+      await instructorsApi.remove(instructor.id);
+      fetchItems();
+    } catch (error) {
+      alert(error instanceof ApiError && error.status === 409 ? "Bu eğitmenin hâlâ kursları var. Önce kursları başka bir eğitmene ver ya da sil." : "Eğitmen silinemedi.");
+    }
   };
 
   return (

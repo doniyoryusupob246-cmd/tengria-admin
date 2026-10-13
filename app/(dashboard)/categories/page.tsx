@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { categoriesApi } from "@/lib/admin-api";
+import { ApiError } from "@/lib/api";
 import { Category } from "@/lib/types";
 import { Button, Card, EmptyState, ErrorBanner, Field, Input, LoadingBlock, PageHeader, Textarea } from "@/components/ui";
 import { Modal } from "@/components/Modal";
@@ -77,8 +78,13 @@ export default function CategoriesPage() {
 
   const handleDelete = async (category: Category) => {
     if (!confirm(`"${category.title}" kategorisini silmek istiyor musun?`)) return;
-    await categoriesApi.remove(category.id);
-    fetchItems();
+    try {
+      await categoriesApi.remove(category.id);
+      fetchItems();
+    } catch (error) {
+      // 409: courses still use it. Media and articles would just lose the category.
+      alert(error instanceof ApiError && error.status === 409 ? "Bu kategoride hâlâ kurslar var. Önce kursları başka bir kategoriye taşı ya da sil." : "Kategori silinemedi.");
+    }
   };
 
   return (

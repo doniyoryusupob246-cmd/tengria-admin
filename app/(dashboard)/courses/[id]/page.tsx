@@ -7,6 +7,7 @@ import { categoriesApi, CoursePayload, coursesApi, instructorsApi } from "@/lib/
 import { Category, CourseDetail, CourseLevel, CourseModule, Instructor, Lesson } from "@/lib/types";
 import { Badge, Button, Card, Checkbox, ErrorBanner, Field, Input, LoadingBlock, PageHeader, Select, Textarea } from "@/components/ui";
 import { ImageUploadField } from "@/components/ImageUploadField";
+import { VIDEO_FIELD_HINT, videoFieldWarning } from "@/lib/video";
 import { Modal } from "@/components/Modal";
 
 type CourseFormState = {
@@ -516,12 +517,14 @@ export default function CourseDetailPage() {
             />
           </Field>
           <div className="md:col-span-2">
-            <Field label="Video Playback ID" htmlFor="lesson-videoPlaybackId" hint="Mux/YouTube/Vimeo kimliği">
+            <Field label="Video" htmlFor="lesson-videoPlaybackId" hint={VIDEO_FIELD_HINT}>
               <Input
                 id="lesson-videoPlaybackId"
                 value={lessonForm.videoPlaybackId}
+                placeholder="Mux Playback ID"
                 onChange={(e) => setLessonForm({ ...lessonForm, videoPlaybackId: e.target.value })}
               />
+              {videoFieldWarning(lessonForm.videoPlaybackId) ? <span className="text-xs text-danger">{videoFieldWarning(lessonForm.videoPlaybackId)}</span> : null}
             </Field>
           </div>
           <div className="md:col-span-2">

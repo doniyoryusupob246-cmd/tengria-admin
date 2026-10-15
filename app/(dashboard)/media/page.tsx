@@ -5,6 +5,7 @@ import { categoriesApi, mediaApi } from "@/lib/admin-api";
 import { Category, MediaItem } from "@/lib/types";
 import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, Field, Input, LoadingBlock, PageHeader, Select, Textarea } from "@/components/ui";
 import { ImageUploadField } from "@/components/ImageUploadField";
+import { VIDEO_FIELD_HINT, videoFieldWarning } from "@/lib/video";
 import { Modal } from "@/components/Modal";
 
 type FormState = {
@@ -208,8 +209,9 @@ export default function MediaPage() {
             />
           </Field>
           <ImageUploadField id="coverUrl" label="Kapak Görseli" value={form.coverUrl} onChange={(coverUrl) => setForm((current) => ({ ...current, coverUrl }))} />
-          <Field label="Video Playback ID" htmlFor="videoPlaybackId" hint="Mux/YouTube/Vimeo kimliği">
-            <Input id="videoPlaybackId" value={form.videoPlaybackId} onChange={(e) => setForm({ ...form, videoPlaybackId: e.target.value })} />
+          <Field label="Video" htmlFor="videoPlaybackId" hint={VIDEO_FIELD_HINT}>
+            <Input id="videoPlaybackId" value={form.videoPlaybackId} placeholder="Mux Playback ID" onChange={(e) => setForm({ ...form, videoPlaybackId: e.target.value })} />
+            {videoFieldWarning(form.videoPlaybackId) ? <span className="text-xs text-danger">{videoFieldWarning(form.videoPlaybackId)}</span> : null}
           </Field>
           <Field label="Yazar / Kaynak" htmlFor="authorName" hint="Videoda gösterilir, boşsa gizlenir">
             <Input id="authorName" value={form.authorName} onChange={(e) => setForm({ ...form, authorName: e.target.value })} />

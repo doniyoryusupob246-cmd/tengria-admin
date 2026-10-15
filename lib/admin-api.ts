@@ -70,6 +70,18 @@ export const uploadsApi = {
   }
 };
 
+export type VideoUploadStatus = { status: "waiting" | "processing" | "ready" | "errored"; playbackId: string | null };
+
+/** Lesson and video files go from the browser straight to Mux; these only open the upload and follow it. */
+export const videosApi = {
+  createUpload(origin: string) {
+    return apiRequest<{ uploadId: string; url: string }>("/admin/videos/uploads", { method: "POST", body: { origin } });
+  },
+  status(uploadId: string) {
+    return apiRequest<VideoUploadStatus>(`/admin/videos/uploads/${encodeURIComponent(uploadId)}`);
+  }
+};
+
 export const statsApi = {
   get() {
     return apiRequest<AdminStats>("/admin/stats");

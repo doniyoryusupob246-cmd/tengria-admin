@@ -431,12 +431,20 @@ function PostRow({ post, busy, onRemove }: { post: ModerationPost; busy: boolean
   return (
     <Card className="space-y-3">
       <div className="flex flex-col gap-4 sm:flex-row">
-        {post.imageUrl ? (
-          <a href={mediaUrl(post.imageUrl)} target="_blank" rel="noreferrer" className="shrink-0">
-            {/* A plain img like the rest of the panel: photos come from the API, not through next/image. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={mediaUrl(post.imageUrl)} alt="Gönderi fotoğrafı" className="h-32 w-32 rounded-xl border border-border object-cover" />
-          </a>
+        {post.imageUrls.length > 0 ? (
+          <div className="flex shrink-0 gap-2">
+            {post.imageUrls.map((url, index) => (
+              <a key={url} href={mediaUrl(url)} target="_blank" rel="noreferrer">
+                {/* A plain img like the rest of the panel: photos come from the API, not through next/image. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={mediaUrl(url)}
+                  alt={`Gönderi fotoğrafı ${index + 1}`}
+                  className={`${post.imageUrls.length > 1 ? "h-24 w-24" : "h-32 w-32"} rounded-xl border border-border object-cover`}
+                />
+              </a>
+            ))}
+          </div>
         ) : null}
         <div className="min-w-0 flex-1 space-y-1.5">
           <div className="flex flex-wrap items-baseline gap-x-2">

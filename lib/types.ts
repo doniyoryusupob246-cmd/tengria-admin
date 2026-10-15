@@ -207,8 +207,8 @@ export type ReportsPage = { items: UserReport[]; total: number; open: number; pa
 export type ModerationPost = {
   id: string;
   description: string;
-  /** A path on the API (`/uploads/posts/...`) or a CDN URL; show it through mediaUrl(). */
-  imageUrl: string | null;
+  /** Up to three, each a path on the API (`/uploads/posts/...`) or a CDN URL; show them through mediaUrl(). */
+  imageUrls: string[];
   likeCount: number;
   commentCount: number;
   createdAt: string;

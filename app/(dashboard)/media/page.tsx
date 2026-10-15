@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { categoriesApi, mediaApi } from "@/lib/admin-api";
 import { Category, MediaItem } from "@/lib/types";
 import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, Field, Input, LoadingBlock, PageHeader, Select, Textarea } from "@/components/ui";
+import { ImageUploadField } from "@/components/ImageUploadField";
 import { Modal } from "@/components/Modal";
 
 type FormState = {
@@ -123,8 +124,12 @@ export default function MediaPage() {
 
   const handleDelete = async (item: MediaItem) => {
     if (!confirm(`"${item.title}" içeriğini silmek istiyor musun?`)) return;
-    await mediaApi.remove(item.id);
-    fetchAll();
+    try {
+      await mediaApi.remove(item.id);
+      fetchAll();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "İçerik silinemedi.");
+    }
   };
 
   return (
@@ -202,9 +207,7 @@ export default function MediaPage() {
               onChange={(e) => setForm({ ...form, durationMinutes: e.target.value })}
             />
           </Field>
-          <Field label="Kapak Görseli URL" htmlFor="coverUrl">
-            <Input id="coverUrl" value={form.coverUrl} onChange={(e) => setForm({ ...form, coverUrl: e.target.value })} />
-          </Field>
+          <ImageUploadField id="coverUrl" label="Kapak Görseli" value={form.coverUrl} onChange={(coverUrl) => setForm((current) => ({ ...current, coverUrl }))} />
           <Field label="Video Playback ID" htmlFor="videoPlaybackId" hint="Mux/YouTube/Vimeo kimliği">
             <Input id="videoPlaybackId" value={form.videoPlaybackId} onChange={(e) => setForm({ ...form, videoPlaybackId: e.target.value })} />
           </Field>

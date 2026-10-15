@@ -63,6 +63,13 @@ export const authApi = {
   }
 };
 
+/** Covers and instructor photos; the returned URL goes into coverUrl / avatarUrl. */
+export const uploadsApi = {
+  image(imageBase64: string, mimeType: string) {
+    return apiRequest<{ url: string }>("/admin/uploads", { method: "POST", body: { imageBase64, mimeType } });
+  }
+};
+
 export const statsApi = {
   get() {
     return apiRequest<AdminStats>("/admin/stats");

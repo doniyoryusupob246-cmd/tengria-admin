@@ -5,6 +5,7 @@
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { StoryPayload, storiesApi } from "@/lib/admin-api";
 import { mediaUrl } from "@/lib/api";
+import { PickedImage, preparePhoto } from "@/lib/image";
 import { Story } from "@/lib/types";
 import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, Field, Input, LoadingBlock, PageHeader, Select, Textarea } from "@/components/ui";
 import { Modal } from "@/components/Modal";
@@ -16,7 +17,6 @@ const CTA_LABEL_MAX = 32;
 /** A story fills a phone screen: 9:16, at most 1080 × 1920. */
 const MAX_WIDTH = 1080;
 const MAX_HEIGHT = 1920;
-const MAX_BYTES = 2 * 1024 * 1024;
 
 const LANGUAGES: { value: Story["language"]; label: string }[] = [
   { value: "tr", label: "Türkçe" },
@@ -34,8 +34,6 @@ type FormState = {
   startsAt: string;
   endsAt: string;
 };
-
-type PickedImage = { base64: string; mimeType: string; previewUrl: string };
 
 /** `<input type="datetime-local">` speaks local time without a zone. */
 function toLocalInput(iso: string | null) {
@@ -58,41 +56,6 @@ function statusOf(story: Story, now: number): { label: string; tone: "success" |
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString("tr-TR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-}
-
-/**
- * Shrinks a photo to fit 1080 × 1920 and re-encodes it as JPEG in the
- * browser, so a phone camera's 8 MB original arrives as a few hundred KB.
- */
-async function preparePhoto(file: File): Promise<PickedImage> {
-  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-    throw new Error("Sadece fotoğraf yüklenebilir (JPEG, PNG veya WebP).");
-  }
-  const source = URL.createObjectURL(file);
-  try {
-    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const element = new Image();
-      element.onload = () => resolve(element);
-      element.onerror = () => reject(new Error("Fotoğraf açılamadı."));
-      element.src = source;
-    });
-    const ratio = Math.min(1, MAX_WIDTH / image.naturalWidth, MAX_HEIGHT / image.naturalHeight);
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.round(image.naturalWidth * ratio);
-    canvas.height = Math.round(image.naturalHeight * ratio);
-    const context = canvas.getContext("2d");
-    if (!context) throw new Error("Fotoğraf işlenemedi.");
-    context.drawImage(image, 0, 0, canvas.width, canvas.height);
-
-    for (const quality of [0.86, 0.76, 0.64]) {
-      const dataUrl = canvas.toDataURL("image/jpeg", quality);
-      const base64 = dataUrl.slice(dataUrl.indexOf(",") + 1);
-      if ((base64.length * 3) / 4 <= MAX_BYTES) return { base64, mimeType: "image/jpeg", previewUrl: dataUrl };
-    }
-    throw new Error("Fotoğraf çok büyük, daha küçük bir tane seç.");
-  } finally {
-    URL.revokeObjectURL(source);
-  }
 }
 
 export default function StoriesPage() {
@@ -156,7 +119,7 @@ export default function StoriesPage() {
     if (!file) return;
     setImageError(null);
     try {
-      setImage(await preparePhoto(file));
+      setImage(await preparePhoto(file, MAX_WIDTH, MAX_HEIGHT));
     } catch (error) {
       setImageError(error instanceof Error ? error.message : "Fotoğraf açılamadı.");
     }
@@ -201,13 +164,21 @@ export default function StoriesPage() {
 
   const handleDelete = async (story: Story) => {
     if (!confirm(`"${story.title}" hikâyesini silmek istiyor musun?`)) return;
-    await storiesApi.remove(story.id);
-    fetchAll();
+    try {
+      await storiesApi.remove(story.id);
+      fetchAll();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Hikâye silinemedi.");
+    }
   };
 
   const togglePublished = async (story: Story) => {
-    await storiesApi.update(story.id, { isPublished: !story.isPublished });
-    fetchAll();
+    try {
+      await storiesApi.update(story.id, { isPublished: !story.isPublished });
+      fetchAll();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Kaydedilemedi.");
+    }
   };
 
   const previewImage = image?.previewUrl ?? (editing ? mediaUrl(editing.imageUrl) : null);

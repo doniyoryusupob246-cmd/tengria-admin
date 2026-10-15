@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { articlesApi, categoriesApi } from "@/lib/admin-api";
 import { Article, Category } from "@/lib/types";
 import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, Field, Input, LoadingBlock, PageHeader, Select, Textarea } from "@/components/ui";
+import { ImageUploadField } from "@/components/ImageUploadField";
 import { Modal } from "@/components/Modal";
 
 type FormState = {
@@ -108,8 +109,12 @@ export default function ArticlesPage() {
 
   const handleDelete = async (article: Article) => {
     if (!confirm(`"${article.title}" makalesini silmek istiyor musun?`)) return;
-    await articlesApi.remove(article.id);
-    fetchAll();
+    try {
+      await articlesApi.remove(article.id);
+      fetchAll();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Makale silinemedi.");
+    }
   };
 
   return (
@@ -177,9 +182,7 @@ export default function ArticlesPage() {
               ))}
             </Select>
           </Field>
-          <Field label="Kapak Görseli URL" htmlFor="coverUrl">
-            <Input id="coverUrl" value={form.coverUrl} onChange={(e) => setForm({ ...form, coverUrl: e.target.value })} />
-          </Field>
+          <ImageUploadField id="coverUrl" label="Kapak Görseli" value={form.coverUrl} onChange={(coverUrl) => setForm((current) => ({ ...current, coverUrl }))} />
           <div className="md:col-span-2">
             <Field label="Özet" htmlFor="excerpt">
               <Textarea id="excerpt" rows={2} value={form.excerpt} onChange={(e) => setForm({ ...form, excerpt: e.target.value })} />

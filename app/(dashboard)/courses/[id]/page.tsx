@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { categoriesApi, CoursePayload, coursesApi, instructorsApi } from "@/lib/admin-api";
 import { Category, CourseDetail, CourseLevel, CourseModule, Instructor, Lesson } from "@/lib/types";
 import { Badge, Button, Card, Checkbox, ErrorBanner, Field, Input, LoadingBlock, PageHeader, Select, Textarea } from "@/components/ui";
+import { ImageUploadField } from "@/components/ImageUploadField";
 import { Modal } from "@/components/Modal";
 
 type CourseFormState = {
@@ -425,9 +426,12 @@ export default function CourseDetailPage() {
                 onChange={(e) => setCourseForm({ ...courseForm, durationMinutes: e.target.value })}
               />
             </Field>
-            <Field label="Kapak Görseli URL" htmlFor="edit-coverUrl">
-              <Input id="edit-coverUrl" value={courseForm.coverUrl} onChange={(e) => setCourseForm({ ...courseForm, coverUrl: e.target.value })} />
-            </Field>
+            <ImageUploadField
+              id="edit-coverUrl"
+              label="Kapak Görseli"
+              value={courseForm.coverUrl}
+              onChange={(coverUrl) => setCourseForm((current) => (current ? { ...current, coverUrl } : current))}
+            />
             <Field label="Alt Başlık" htmlFor="edit-subtitle">
               <Input id="edit-subtitle" value={courseForm.subtitle} onChange={(e) => setCourseForm({ ...courseForm, subtitle: e.target.value })} />
             </Field>

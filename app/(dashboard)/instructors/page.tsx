@@ -5,6 +5,7 @@ import { instructorsApi } from "@/lib/admin-api";
 import { ApiError } from "@/lib/api";
 import { Instructor } from "@/lib/types";
 import { Button, Card, EmptyState, ErrorBanner, Field, Input, LoadingBlock, PageHeader, Textarea } from "@/components/ui";
+import { ImageUploadField } from "@/components/ImageUploadField";
 import { Modal } from "@/components/Modal";
 
 type FormState = { slug: string; name: string; title: string; bio: string; avatarUrl: string };
@@ -146,9 +147,15 @@ export default function InstructorsPage() {
           <Field label="Biyografi" htmlFor="bio">
             <Textarea id="bio" rows={3} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} />
           </Field>
-          <Field label="Avatar URL" htmlFor="avatarUrl">
-            <Input id="avatarUrl" value={form.avatarUrl} onChange={(e) => setForm({ ...form, avatarUrl: e.target.value })} />
-          </Field>
+          <ImageUploadField
+            id="avatarUrl"
+            label="Fotoğraf"
+            value={form.avatarUrl}
+            onChange={(avatarUrl) => setForm((current) => ({ ...current, avatarUrl }))}
+            maxWidth={600}
+            maxHeight={600}
+            round
+          />
           {formError ? <p className="text-sm text-danger">{formError}</p> : null}
           <div className="mt-2 flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>

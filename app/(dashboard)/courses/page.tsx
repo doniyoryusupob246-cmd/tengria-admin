@@ -5,6 +5,7 @@ import Link from "next/link";
 import { categoriesApi, CoursePayload, coursesApi, instructorsApi } from "@/lib/admin-api";
 import { Category, CourseLevel, CourseListItem, Instructor } from "@/lib/types";
 import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, Field, Input, LoadingBlock, PageHeader, Select, Textarea } from "@/components/ui";
+import { ImageUploadField } from "@/components/ImageUploadField";
 import { Modal } from "@/components/Modal";
 
 type FormState = {
@@ -103,8 +104,12 @@ export default function CoursesPage() {
 
   const handleDelete = async (course: CourseListItem) => {
     if (!confirm(`"${course.title}" kursunu silmek istiyor musun? Bu işlem modülleri ve dersleri de siler.`)) return;
-    await coursesApi.remove(course.id);
-    fetchAll();
+    try {
+      await coursesApi.remove(course.id);
+      fetchAll();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Kurs silinemedi.");
+    }
   };
 
   return (
@@ -208,9 +213,7 @@ export default function CoursesPage() {
           <Field label="Süre (dakika)" htmlFor="durationMinutes">
             <Input id="durationMinutes" type="number" value={form.durationMinutes} onChange={(e) => setForm({ ...form, durationMinutes: e.target.value })} />
           </Field>
-          <Field label="Kapak Görseli URL" htmlFor="coverUrl">
-            <Input id="coverUrl" value={form.coverUrl} onChange={(e) => setForm({ ...form, coverUrl: e.target.value })} />
-          </Field>
+          <ImageUploadField id="coverUrl" label="Kapak Görseli" value={form.coverUrl} onChange={(coverUrl) => setForm((current) => ({ ...current, coverUrl }))} />
           <Field label="Alt Başlık" htmlFor="subtitle">
             <Input id="subtitle" value={form.subtitle} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} />
           </Field>
